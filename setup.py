@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='strategery',
-    version='0.0.1',
+    version='0.1.0',
     author='Robert Gale',
     author_email='rcgale@gmail.com',
     packages=['strategery'],

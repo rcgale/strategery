@@ -1,3 +1,8 @@
+import inspect
+
+from strategery.exceptions import StrategyError
+
+
 def get_requirements(targets, preprocessed):
     requirements = set([t for t in targets if t not in preprocessed])
     visited = set([key for key in preprocessed])
@@ -10,6 +15,13 @@ def get_requirements(targets, preprocessed):
             visited.add(task)
             if hasattr(task, "dependencies"):
                 for dep in task.dependencies:
+                    if not callable(dep) and dep not in preprocessed:
+                        raise StrategyError('Task {t} failed, expected parameter {d}, but parameter was not found.\nat "{f}:{l}".'.format(
+                            t=task.__name__,
+                            d=dep.__name__ if hasattr(dep, "__name__") else str(dep),
+                            f=inspect.getmodule(task).__file__,
+                            l=task.__code__.co_firstlineno
+                        ))
                     if dep not in visited:
                         requirements.add(dep)
 

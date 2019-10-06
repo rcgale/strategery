@@ -2,17 +2,14 @@ from strategery import fed_by
 import strategery
 import sys
 
-class ParamListOfNumbers(list):
-    '''Dummy class that is a key for input parameters'''
-    pass
 
-@fed_by(ParamListOfNumbers)
+@fed_by('ParamListOfNumbers')
 def Minimum(numbers):
     ''' The least '''
     return min(numbers)
 
 
-@fed_by(ParamListOfNumbers)
+@fed_by('ParamListOfNumbers')
 def Mean(numbers):
     ''' AKA Average '''
     return 1.0 * sum(numbers) / len(numbers)
@@ -34,7 +31,7 @@ mean, absolute_value_minimum = strategery.execute(
             AbsoluteValueMinimum
         ],
         preprocessed={
-            ParamListOfNumbers: [-1, -2, -3, -4, -5]
+            'ParamListOfNumbers': [-1, -2, -3, -4, -5]
         }
     )
 

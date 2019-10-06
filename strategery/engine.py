@@ -1,6 +1,7 @@
 import inspect
 import time
 
+from strategery.exceptions import TaskError, StrategyError
 from strategery.logging import BypassLogger
 from strategery.strategy import get_strategy
 
@@ -41,8 +42,9 @@ def execute(*args, targets, preprocessed):
                     print('[%2.2f sec] Processed: %r ' % (te - ts, task.__name__),
                           file=logger)
                 except Exception as e:
-                    raise Exception('Stategery failed at task {t}, found at "{f}:{l}".\n\nInner error: {e}'.format(
+                    raise TaskError('Stategery failed at task {t}, found at "{f}:{l}".\n\nInner error:\n{et}: {e}'.format(
                         t=task.__name__,
+                        et=type(e).__name__,
                         e=e,
                         f=inspect.getmodule(task).__file__,
                         l=task.__code__.co_firstlineno
@@ -60,7 +62,7 @@ def __assert_task_parameters(task, dependencies):
         task = task.original_function
     signature = inspect.signature(task)
     if len(signature.parameters) != len(dependencies):
-        raise Exception("Stategery task {t} expects parameters {p}, we have parameters {d}".format(
+        raise StrategyError("Stategery task {t} expects parameters {p}, we have parameters {d}".format(
             t=task.__name__,
             p=[k for k in signature.parameters.keys()],
             d=[d.__name__ if hasattr(d, "__name__") else type(d)
