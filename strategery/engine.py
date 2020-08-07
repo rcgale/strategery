@@ -12,9 +12,9 @@ def execute(*args, targets, preprocessed):
         # Convert lists/tuples to type-indexed dictionary
         preprocessed = { type(p): p for p in preprocessed }
 
-    queue = get_strategy(targets, start=None, preprocessed=preprocessed)
+    queue = get_strategy(targets, preprocessed=preprocessed)
 
-    print("Processing strategy:", file=logger)
+    print('Processing strategy:', file=logger)
     for stage in queue:
         print([t.__name__ for t in stage],
               file=logger)
@@ -31,13 +31,9 @@ def execute(*args, targets, preprocessed):
 
                     __assert_task_type(task)
 
-                    dependencies = tuple()
-                    if hasattr(task, "dependencies"):
-                        dependencies = tuple([processed[d] for d in task.dependencies])
-
-                    __assert_task_parameters(task, dependencies)
-
+                    dependencies = __resolve_task_dependencies(task, processed)
                     processed[task] = task(*dependencies)
+
                     te = time.time()
                     print('[%2.2f sec] Processed: %r ' % (te - ts, task.__name__),
                           file=logger)
@@ -57,14 +53,32 @@ def __assert_task_type(task):
         raise Exception("Task cannot be processed, '{t}' is not a function or a class.".format(t=task.__name__))
 
 
-def __assert_task_parameters(task, dependencies):
-    while hasattr(task, "original_function"):
+def __resolve_task_dependencies(task, processed):
+    if not hasattr(task, 'dependencies'):
+        return tuple()
+
+    while hasattr(task, 'original_function'):
         task = task.original_function
-    signature = inspect.signature(task)
-    if len(signature.parameters) != len(dependencies):
-        raise StrategyError("Stategery task {t} expects parameters {p}, we have parameters {d}".format(
+
+    signature: inspect.Signature = inspect.signature(task)
+
+    if len(signature.parameters) != len(task.dependencies):
+        raise StrategyError('Stategery task {t} expects parameters {p}, @fed_by decorator only accounts for {d}'.format(
             t=task.__name__,
             p=[k for k in signature.parameters.keys()],
             d=[d.__name__ if hasattr(d, "__name__") else type(d)
-               for d in dependencies]
+               for d in task.dependencies]
         ))
+
+    values = []
+    for parameter, dependency in zip(signature.parameters.values(), task.dependencies):
+        if dependency in processed:
+            values.append(processed[dependency])
+        elif parameter.default != inspect._empty:
+            values.append(parameter.default)
+        else:
+            raise StrategyError('Strategery task {t} could not resolve parameter {p}.'.format(
+                t=task.__name__,
+                p=parameter.name
+            ))
+    return values
