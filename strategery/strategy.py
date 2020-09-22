@@ -1,11 +1,13 @@
 import inspect
+from typing import List
 
 from strategery.exceptions import StrategyError
+from strategery.tasks import Task
 
 
-def get_requirements(targets, preprocessed):
-    requirements = set([t for t in targets if t not in preprocessed])
-    visited = set([key for key in preprocessed])
+def get_requirements(targets, preprocessed) -> List[Task]:
+    requirements = set([Task(t) for t in targets if Task(t) not in preprocessed])
+    visited = set([Task(key) for key in preprocessed])
 
     while True:
         to_visit = [req for req in requirements if req not in visited]
@@ -14,17 +16,17 @@ def get_requirements(targets, preprocessed):
         for task in to_visit:
             visited.add(task)
             if hasattr(task, 'dependencies'):
-                parameters = inspect.signature(task).parameters.values()
+                parameters = task.signature.parameters.values()
                 for parameter, dep in zip(parameters, task.dependencies):
-                    if not callable(dep) and dep not in preprocessed:
+                    if not dep.callable() and dep not in preprocessed:
                         if parameter.default != inspect._empty:
                             continue
                         else:
                             raise StrategyError('Task {t} failed, expected parameter {d}, but parameter was not found.\nat "{f}:{l}".'.format(
-                                t=task.__name__,
-                                d=dep.__name__ if hasattr(dep, '__name__') else str(dep),
-                                f=inspect.getmodule(task).__file__,
-                                l=task.__code__.co_firstlineno
+                                t=task.name,
+                                d=dep.name,
+                                f=task.code_file_name,
+                                l=task.code_first_line_number
                             ))
                     if dep not in visited:
                         requirements.add(dep)
@@ -37,8 +39,8 @@ def dependencies_met(task, queue, preprocessed):
     for stage in queue:
         flat = flat.union(stage)
 
-    if hasattr(task, 'dependencies'):
-        parameters = inspect.signature(task).parameters.values()
+    if len(task.dependencies):
+        parameters = task.signature.parameters.values()
         for parameter, dep in zip(parameters, task.dependencies):
             if dep not in flat and parameter.default == inspect._empty:
                 return False

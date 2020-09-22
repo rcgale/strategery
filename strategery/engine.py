@@ -1,27 +1,32 @@
 import inspect
+import sys
 import time
+from functools import lru_cache
 
 from strategery.exceptions import TaskError, StrategyError
 from strategery.logging import BypassLogger
 from strategery.strategy import get_strategy
+from strategery.tasks import Task
 
-logger = BypassLogger()
+logger = None
 
-def execute(*args, targets, preprocessed):
-    if type(preprocessed) is list or type(preprocessed) is tuple:
+def execute(*args, targets, input=None, preprocessed=None):
+    resolved_logger = logger or BypassLogger()
+    input = __renaming_preprocessed_to_input(preprocessed, input)
+    if type(input) is list or type(input) is tuple:
         # Convert lists/tuples to type-indexed dictionary
-        preprocessed = { type(p): p for p in preprocessed }
+        input = {type(p): p for p in input}
 
-    queue = get_strategy(targets, preprocessed=preprocessed)
+    queue = get_strategy(targets, preprocessed=input)
 
-    print('Processing strategy:', file=logger)
+    print('Processing strategy:', file=resolved_logger)
     for stage in queue:
-        print([t.__name__ for t in stage],
-              file=logger)
-    print("\n", file=logger)
+        print([t.name for t in stage],
+              file=resolved_logger)
+    print("\n", file=resolved_logger)
 
     # Populate with preprocessed
-    processed = preprocessed
+    processed = input
 
     for stage in queue:
         for task in stage:
@@ -35,50 +40,59 @@ def execute(*args, targets, preprocessed):
                     processed[task] = task(*dependencies)
 
                     te = time.time()
-                    print('[%2.2f sec] Processed: %r ' % (te - ts, task.__name__),
-                          file=logger)
+                    print('[%2.2f sec] Processed: %r ' % (te - ts, task.name),
+                          file=resolved_logger)
                 except Exception as e:
                     raise TaskError('Stategery failed at task {t}, found at "{f}:{l}".\n\nInner error:\n{et}: {e}'.format(
-                        t=task.__name__,
+                        t=task.name,
                         et=type(e).__name__,
                         e=e,
-                        f=inspect.getmodule(task).__file__,
-                        l=task.__code__.co_firstlineno
+                        f=task.code_file_name,
+                        l=task.code_first_line_number
                     ))
 
     return tuple([processed[t] for t in targets])
 
+
+def __renaming_preprocessed_to_input(preprocessed, input):
+    if preprocessed:
+        __warn_once(
+            'strategery warning: the argument `preprocessed` has been renamed to `input` '
+            'and will be removed in a future version.',
+        )
+    if input and preprocessed:
+        raise Exception('Cannot specify both `input` and `preprocessed')
+    return input or preprocessed or {}
+
+
+@lru_cache(1)
+def __warn_once(message):
+    print(message, file=sys.stderr)
+
+
 def __assert_task_type(task):
-    if not inspect.isfunction(task) and not inspect.isclass(task):
-        raise Exception("Task cannot be processed, '{t}' is not a function or a class.".format(t=task.__name__))
+    if not inspect.isfunction(task) and not inspect.isclass(task) and not hasattr(type(task), '__call__'):
+        raise Exception("Task cannot be processed, '{t}' is not a function or a class.".format(t=task.name))
 
 
-def __resolve_task_dependencies(task, processed):
-    if not hasattr(task, 'dependencies'):
-        return tuple()
-
-    while hasattr(task, 'original_function'):
-        task = task.original_function
-
-    signature: inspect.Signature = inspect.signature(task)
-
-    if len(signature.parameters) != len(task.dependencies):
+def __resolve_task_dependencies(task: Task, processed):
+    if len(task.signature.parameters) != len(task.dependencies):
         raise StrategyError('Stategery task {t} expects parameters {p}, @fed_by decorator only accounts for {d}'.format(
-            t=task.__name__,
-            p=[k for k in signature.parameters.keys()],
+            t=task.name,
+            p=[k for k in task.signature.parameters.keys()],
             d=[d.__name__ if hasattr(d, "__name__") else type(d)
                for d in task.dependencies]
         ))
 
     values = []
-    for parameter, dependency in zip(signature.parameters.values(), task.dependencies):
+    for parameter, dependency in zip(task.signature.parameters.values(), task.dependencies):
         if dependency in processed:
             values.append(processed[dependency])
         elif parameter.default != inspect._empty:
             values.append(parameter.default)
         else:
             raise StrategyError('Strategery task {t} could not resolve parameter {p}.'.format(
-                t=task.__name__,
+                t=task.name,
                 p=parameter.name
             ))
     return values

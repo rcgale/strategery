@@ -30,7 +30,7 @@ mean, absolute_value_minimum = strategery.execute(
             Mean,
             AbsoluteValueMinimum
         ],
-        preprocessed={
+        input={
             'ParamListOfNumbers': [-1, -2, -3, -4, -5]
         }
     )
