@@ -15,7 +15,7 @@ def get_requirements(targets, preprocessed) -> List[Task]:
             break
         for task in to_visit:
             visited.add(task)
-            if hasattr(task, 'dependencies'):
+            if len(task.dependencies):
                 parameters = task.signature.parameters.values()
                 for parameter, dep in zip(parameters, task.dependencies):
                     if not dep.callable() and dep not in preprocessed:

@@ -76,7 +76,7 @@ def __assert_task_type(task):
 
 
 def __resolve_task_dependencies(task: Task, processed):
-    if len(task.signature.parameters) != len(task.dependencies):
+    if len(task.parameters) != len(task.dependencies):
         raise StrategyError('Stategery task {t} expects parameters {p}, @fed_by decorator only accounts for {d}'.format(
             t=task.name,
             p=[k for k in task.signature.parameters.keys()],
@@ -85,7 +85,7 @@ def __resolve_task_dependencies(task: Task, processed):
         ))
 
     values = []
-    for parameter, dependency in zip(task.signature.parameters.values(), task.dependencies):
+    for parameter, dependency in zip(task.parameters.values(), task.dependencies):
         if dependency in processed:
             values.append(processed[dependency])
         elif parameter.default != inspect._empty:

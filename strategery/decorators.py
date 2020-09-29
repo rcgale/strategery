@@ -8,7 +8,7 @@ def fed_by(*args, **kwargs):
     def wrapper(function):
         @functools.wraps(function)
         def decorator():
-            function.dependencies = [Task(dep) for dep in args]
+            function._dependencies = [Task(dep) for dep in args]
             return function
         return decorator()
     return wrapper
