@@ -21,7 +21,7 @@ def execute(*args, targets, input=None, preprocessed=None):
 
     print('Processing strategy:', file=resolved_logger)
     for stage in queue:
-        print([t.name for t in stage],
+        print([t.name() for t in stage],
               file=resolved_logger)
     print("\n", file=resolved_logger)
 
@@ -40,15 +40,14 @@ def execute(*args, targets, input=None, preprocessed=None):
                     processed[task] = task(*dependencies)
 
                     te = time.time()
-                    print('[%2.2f sec] Processed: %r ' % (te - ts, task.name),
+                    print('[%2.2f sec] Processed: %r ' % (te - ts, task.name()),
                           file=resolved_logger)
                 except Exception as e:
-                    raise TaskError('Stategery failed at task {t}, found at "{f}:{l}".\n\nInner error:\n{et}: {e}'.format(
-                        t=task.name,
+                    raise TaskError('Stategery failed at task {t}, found at approximately "{f}".\n\nInner error:\n{et}: {e}'.format(
+                        t=task.name(),
                         et=type(e).__name__,
                         e=e,
-                        f=task.code_file_name,
-                        l=task.code_first_line_number
+                        f=task.code_file_colon_line(),
                     ))
 
     return tuple([processed[t] for t in targets])
@@ -78,10 +77,9 @@ def __assert_task_type(task):
 def __resolve_task_dependencies(task: Task, processed):
     if len(task.parameters) != len(task.dependencies):
         raise StrategyError('Stategery task {t} expects parameters {p}, @fed_by decorator only accounts for {d}'.format(
-            t=task.name,
+            t=task.name(),
             p=[k for k in task.signature.parameters.keys()],
-            d=[d.__name__ if hasattr(d, "__name__") else type(d)
-               for d in task.dependencies]
+            d=[d.name() for d in task.dependencies]
         ))
 
     values = []
@@ -92,7 +90,7 @@ def __resolve_task_dependencies(task: Task, processed):
             values.append(parameter.default)
         else:
             raise StrategyError('Strategery task {t} could not resolve parameter {p}.'.format(
-                t=task.name,
+                t=task.name(),
                 p=parameter.name
             ))
     return values

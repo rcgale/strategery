@@ -22,11 +22,10 @@ def get_requirements(targets, preprocessed) -> List[Task]:
                         if parameter.default != inspect._empty:
                             continue
                         else:
-                            raise StrategyError('Task {t} failed, expected parameter {d}, but parameter was not found.\nat "{f}:{l}".'.format(
-                                t=task.name,
-                                d=dep.name,
-                                f=task.code_file_name,
-                                l=task.code_first_line_number
+                            raise StrategyError('Task {t} failed, expected parameter {d}, but parameter was not found.\nat "{f}".'.format(
+                                t=task.name(),
+                                d=dep.name(),
+                                f=task.code_file_colon_line()
                             ))
                     if dep not in visited:
                         requirements.add(dep)

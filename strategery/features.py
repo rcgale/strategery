@@ -1,17 +1,14 @@
+from abc import abstractmethod
+
 from strategery.exceptions import TaskError
 
 
 class StrategeryFeature(object):
-    def __init__(self, unique_key=None):
-        self._unique_key = unique_key
-        if unique_key is None:
-            self._unique_key = type(self)
-        self._dependencies = tuple()
-        if hasattr(self, '__call__') and hasattr(self.__call__, '_dependencies'):
-            self._dependencies = self.__call__._dependencies
+    @classmethod
+    def key(cls):
+        return cls
 
-    def __hash__(self):
-        return hash(self._unique_key)
-
-    def __eq__(self, other):
-        return self._unique_key == other
+    @staticmethod
+    @abstractmethod
+    def compute(*args, **kwargs):
+        raise NotImplementedError('StrategeryFeature must implement @staticmethod `compute`!')

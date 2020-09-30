@@ -6,76 +6,87 @@ from strategery.features import StrategeryFeature
 
 class Task(object):
     def __init__(self, task):
-        self._task = task
+        self.task = task
+        self.compute = task
         self.dependencies = tuple()
         self.signature = tuple()
         self.parameters = {}
-        if hasattr(self._task, '_dependencies'):
-            self.dependencies = self._task._dependencies
-            self.signature = inspect.signature(self._task)
+        self._key = task
+
+        if inspect.isclass(task) and issubclass(task, StrategeryFeature):
+            if hasattr(task, 'compute'):
+                self.compute = task.compute
+                self._key = task.key()
+            else:
+                raise TaskError(
+                    'Tasks inheriting the StrategeryFeature interface must implement @staticclass `builder`.\n' + \
+                    'Task {t}, found at "{f}".'.format(
+                    t=self.name(),
+                    f=self.code_file_colon_line()
+                ))
+
+        if hasattr(self.compute, '_dependencies'):
+            self.dependencies = self.compute._dependencies
+            self.signature = inspect.signature(self.compute)
             self.parameters = self.signature.parameters
-        elif isinstance(task, StrategeryFeature):
-            self._assert_has_unique_key()
-        elif hasattr(self._task, '__call__') and hasattr(self._task.__call__, '_dependencies'):
-            raise TaskError('Instance tasks should inherit from StrategeryFeature class.\n' + \
-                            'Task {t}, found at "{f}:{l}".'.format(
-                                t=self.name,
-                                f=self.code_file_name,
-                                l=self.code_first_line_number
-                            ))
 
-    @property
     def name(self):
-        if isinstance(self._task, str):
-            return "'{}'".format(self._task)
+        error_task = self._error_feedback_task()
+        if isinstance(error_task, str):
+            return "'{}'".format(error_task)
         module = ""
-        if hasattr(self._task, '__module__'):
-            module = '{}.'.format(self._task.__module__)
-        if hasattr(self._task, '__class__') and hasattr(self._task.__class__, '__qualname__'):
-            return '{}{}'.format(module, self._task.__class__.__qualname__)
-        if hasattr(self._task, '__name__'):
-            return '{}{}'.format(module, self._task.__name__)
-        return '{}{}'.format(module, type(self._task).__name__)
+        if hasattr(error_task, '__module__'):
+            module = '{}.'.format(error_task.__module__)
+        if hasattr(error_task, '__qualname__'):
+            return '{}{}'.format(module, error_task.__qualname__)
+        if hasattr(error_task, '__name__'):
+            return '{}{}'.format(module, error_task.__name__)
+        try:
+            return '{}{}'.format(module, type(error_task).__name__)
+        except Exception:
+            return '{}{}'.format(module, str(error_task))
 
-
-    @property
     def code_first_line_number(self):
+        error_task = self._error_feedback_task()
         try:
             if not self.callable():
                 return None
-            if hasattr(self._task, '__code__'):
-                return self._task.__code__.co_firstlineno
-            return inspect.findsource(type(self._task))[1]
+            if hasattr(error_task, '__code__'):
+                return error_task.__code__.co_firstlineno
+            return '{}'.format(inspect.findsource(type(error_task))[1])
         except:
-            return '(unknown line number)'
+            return None
 
-    @property
     def code_file_name(self):
+        error_task = self._error_feedback_task()
         try:
-            return inspect.getmodule(self._task).__file__
+            return inspect.getmodule(error_task).__file__
         except:
             return '(unknown file)'
 
-    def _assert_has_unique_key(self):
-        if not hasattr(self._task, '_unique_key'):
-            raise TaskError('Subclasses of StrategeryFeature must call super().__init__(unique_key=[optional]).\n' + \
-                            'Task {t}, found at "{f}:{l}".'.format(
-                                t=self.name,
-                                f=self.code_file_name,
-                                l=self.code_first_line_number
-                            ))
+    def code_file_colon_line(self):
+        line_number = self.code_first_line_number()
+        if not line_number:
+            line_number = "0"
+        return "{}:{}".format(self.code_file_name(), line_number)
+
+    def _error_feedback_task(self):
+        if self.compute == StrategeryFeature.compute:
+            # This means a StrategeryFeature didn't implement `compute`
+            return self.task
+        return self.compute
 
     def callable(self):
-        return callable(self._task)
+        return callable(self.compute)
 
     def __call__(self, *args, **kwargs):
-        return self._task.__call__(*args, **kwargs)
+        return self.compute.__call__(*args, **kwargs)
 
     def __hash__(self):
-        return hash(self._task)
+        return hash(self._key)
 
     def __eq__(self, other):
-        return self._task == other
+        return self._key == other
 
     def __str__(self):
-        return 'Strategery Task: {}'.format(self._task)
+        return 'Strategery Task: {}'.format(self.name())
