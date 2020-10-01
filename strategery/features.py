@@ -1,9 +1,10 @@
 from abc import abstractmethod
+import abc
 
 from strategery.exceptions import TaskError
 
 
-class StrategeryFeature(object):
+class StrategeryFeature(metaclass=abc.ABCMeta):
     @classmethod
     def key(cls):
         return cls

@@ -77,6 +77,8 @@ class Task(object):
         return self.compute
 
     def callable(self):
+        if inspect.isclass(self.compute):
+            return False
         return callable(self.compute)
 
     def __call__(self, *args, **kwargs):
