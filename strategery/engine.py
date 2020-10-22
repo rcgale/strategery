@@ -20,9 +20,8 @@ def execute(*args, targets, input=None, preprocessed=None):
     queue = get_strategy(targets, preprocessed=input)
 
     print('Processing strategy:', file=resolved_logger)
-    for stage in queue:
-        print([t.name() for t in stage],
-              file=resolved_logger)
+    for n, stage in enumerate(queue):
+        print('Phase {}: {}'.format(n, [t.name() for t in stage]), file=resolved_logger)
     print("\n", file=resolved_logger)
 
     # Populate with preprocessed
