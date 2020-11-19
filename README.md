@@ -8,7 +8,7 @@ pip install strategery
 ## About
 Strategery is an approach to structuring code, built around feature extraction tasks in machine learning. It enables flexibility and configurability for complex, interdependent graphs of functions. I'm no expert in design patterns, but I think it's somewhere between [chain-of-responsibility](https://en.wikipedia.org/wiki/Chain-of-responsibility_pattern) and [strategy](https://en.wikipedia.org/wiki/Strategy_pattern).
 
-The concept is that you're trying to build a feature vector, and in the process, you have all these functions you want to apply to a common source of information. You find yourself reusing the same algorithms in a bunch of scripts, but sometimes just some of them, and sometimes in a different order, and sometimes you want to discard interstitial data. Sometimes you perform an expensive calculation in the middle, but you want to share that result between other functions.
+You're trying to extract some features, which are the output of numerous functions. You find yourself reusing the same algorithms in a bunch of scripts, but sometimes only some of them, and sometimes in a different order, and sometimes you want to discard interstitial data. Sometimes you perform an expensive calculation in the middle, but you want to share that result between other functions. Strategery might be for you.
 
 For a toy example, let's say the features you're extracting are a Minimum, Mean, and AbsoluteValueMinimum.
 
