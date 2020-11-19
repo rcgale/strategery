@@ -1,6 +1,9 @@
 # Strategery
 
 ## Installation
+
+This package has [zero dependencies](setup.py#L13), so don't be shy.
+
 ```bash
 pip install strategery
 ```
