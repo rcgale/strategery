@@ -6,7 +6,7 @@ from functools import lru_cache
 from strategery.exceptions import TaskError, StrategyError
 from strategery.logging import BypassLogger
 from strategery.strategy import get_strategy
-from strategery.tasks import Task
+from strategery.tasks import Task, get_key
 
 logger = None
 
@@ -49,7 +49,7 @@ def execute(*args, targets, input=None, preprocessed=None):
                         f=task.code_file_colon_line(),
                     ))
 
-    return tuple([processed[t] for t in targets])
+    return tuple([processed[get_key(t)] for t in targets])
 
 
 def __renaming_preprocessed_to_input(preprocessed, input):

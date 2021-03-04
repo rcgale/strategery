@@ -4,6 +4,14 @@ from strategery.exceptions import TaskError
 from strategery.features import StrategeryFeature
 
 
+def get_key(obj):
+    if isinstance(obj, str):
+        return obj
+    if hasattr(obj, "strategery_key"):
+        return obj.strategery_key()
+    return obj
+
+
 class Task(object):
     def __init__(self, task):
         self.task = task
@@ -11,15 +19,11 @@ class Task(object):
         self.dependencies = tuple()
         self.signature = tuple()
         self.parameters = {}
-        self._key = task
+        self._key = get_key(task)
 
         if inspect.isclass(task) and issubclass(task, StrategeryFeature):
             if hasattr(task, 'compute'):
                 self.compute = task.compute
-                try:
-                    self._key = task.strategery_key()
-                except:
-                    raise
             else:
                 raise TaskError(
                     'Tasks inheriting the StrategeryFeature interface must implement @staticclass `builder`.\n' + \
@@ -32,6 +36,7 @@ class Task(object):
             self.dependencies = self.compute._dependencies
             self.signature = inspect.signature(self.compute)
             self.parameters = self.signature.parameters
+
 
     def name(self):
         error_task = self._error_feedback_task()
