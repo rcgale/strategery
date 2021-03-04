@@ -16,7 +16,10 @@ class Task(object):
         if inspect.isclass(task) and issubclass(task, StrategeryFeature):
             if hasattr(task, 'compute'):
                 self.compute = task.compute
-                self._key = task.key()
+                try:
+                    self._key = task.strategery_key()
+                except:
+                    raise
             else:
                 raise TaskError(
                     'Tasks inheriting the StrategeryFeature interface must implement @staticclass `builder`.\n' + \

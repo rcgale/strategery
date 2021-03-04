@@ -6,7 +6,7 @@ from strategery.exceptions import TaskError
 
 class StrategeryFeature(metaclass=abc.ABCMeta):
     @classmethod
-    def key(cls):
+    def strategery_key(cls):
         return cls
 
     @staticmethod
