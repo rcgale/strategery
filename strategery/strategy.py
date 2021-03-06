@@ -1,4 +1,5 @@
 import inspect
+from functools import lru_cache
 from typing import List
 
 from strategery.exceptions import StrategyError
@@ -47,11 +48,12 @@ def dependencies_met(task, queue, preprocessed):
     return True
 
 
-def get_strategy(targets, preprocessed):
-    requirements = get_requirements(targets, preprocessed)
+@lru_cache()
+def get_strategy(targets, preprocessed_keys):
+    requirements = get_requirements(targets, preprocessed_keys)
     queue = []
-    while (len(requirements) > 0):
-        ready_tasks = [req for req in requirements if dependencies_met(req, queue, preprocessed)]
+    while len(requirements) > 0:
+        ready_tasks = [req for req in requirements if dependencies_met(req, queue, preprocessed_keys)]
         if len(ready_tasks) > 0:
             queue.append(ready_tasks)
             for task in ready_tasks:

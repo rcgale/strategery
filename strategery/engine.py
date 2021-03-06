@@ -17,7 +17,7 @@ def execute(*args, targets, input=None, preprocessed=None):
         # Convert lists/tuples to type-indexed dictionary
         input = {type(p): p for p in input}
 
-    queue = get_strategy(targets, preprocessed=input)
+    queue = get_strategy(tuple(targets), preprocessed_keys=tuple(input.keys()))
 
     print('Processing strategy:', file=resolved_logger)
     for n, stage in enumerate(queue):
